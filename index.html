@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SATA Health – End-to-End Healthcare Experience Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+        serif: ['Playfair Display', 'serif'],
+      },
+      colors: {
+        brand: {
+          50: '#f0fdfa', 100: '#ccfbf1', 200: '#99f6e4', 300: '#5eead4',
+          400: '#2dd4bf', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e',
+          800: '#115e59', 900: '#134e4a',
+        }
+      }
+    }
+  }
+}
+</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#1a1a2e;overflow-x:hidden}
+
+.mesh-bg{
+  position:fixed;inset:0;z-index:-1;
+  background:
+    radial-gradient(ellipse 90% 70% at 5% 15%, rgba(13,148,136,0.10) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 90% at 95% 85%, rgba(59,130,246,0.08) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 60% at 50% 40%, rgba(168,85,247,0.06) 0%, transparent 55%),
+    radial-gradient(ellipse 80% 50% at 80% 10%, rgba(244,114,182,0.05) 0%, transparent 50%),
+    linear-gradient(180deg, #eef1f5 0%, #f5f7fa 40%, #f0f2f5 100%);
+}
+
+.glass{
+  background: linear-gradient(165deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.55) 40%, rgba(245,248,255,0.50) 100%);
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  border: 1px solid rgba(255,255,255,0.9);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03),
+    inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(0,0,0,0.02);
+}
+.glass-strong{
+  background: linear-gradient(170deg, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.72) 35%, rgba(248,250,255,0.68) 100%);
+  backdrop-filter: blur(36px) saturate(1.8);
+  -webkit-backdrop-filter: blur(36px) saturate(1.8);
+  border: 1px solid rgba(255,255,255,0.95);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.04),
+    0 1px 3px rgba(0,0,0,0.02), inset 0 2px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(0,0,0,0.015);
+}
+.glass-dark{
+  background: linear-gradient(165deg, rgba(15,23,42,0.92) 0%, rgba(15,23,42,0.82) 50%, rgba(10,15,30,0.88) 100%);
+  backdrop-filter: blur(32px) saturate(1.5);
+  -webkit-backdrop-filter: blur(32px) saturate(1.5);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+.glossy{position:relative;overflow:hidden}
+.glossy::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:55%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.18) 30%,
+    rgba(255,255,255,0.04) 60%, transparent 100%);
+  pointer-events:none;z-index:1;border-radius:inherit;
+}
+.glossy::after{
+  content:'';position:absolute;top:4px;left:8%;right:8%;height:1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent);
+  pointer-events:none;z-index:2;
+}
+
+.gradient-border{
+  position:relative;
+  background: linear-gradient(170deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.60) 100%);
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  border-radius:24px;
+}
+.gradient-border::before{
+  content:'';position:absolute;inset:-1.5px;border-radius:25px;padding:1.5px;
+  background: linear-gradient(135deg, rgba(13,148,136,0.4), rgba(59,130,246,0.3),
+    rgba(168,85,247,0.3), rgba(244,114,182,0.25), rgba(13,148,136,0.15));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;mask-composite: exclude;pointer-events:none;
+}
+.gradient-border::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, transparent 100%);
+  border-radius:24px 24px 0 0;pointer-events:none;
+}
+
+.stat-card{transition:all 0.5s cubic-bezier(0.4,0,0.2,1)}
+.stat-card:hover{
+  transform:translateY(-8px) scale(1.02);
+  box-shadow: 0 32px 80px rgba(13,148,136,0.14), 0 8px 24px rgba(0,0,0,0.06), inset 0 2px 0 rgba(255,255,255,1);
+}
+
+.icon-badge{
+  position:relative;
+  box-shadow: 0 8px 24px rgba(13,148,136,0.25), 0 2px 6px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+.icon-badge::before{
+  content:'';position:absolute;top:0;left:2px;right:2px;height:45%;
+  background:linear-gradient(180deg,rgba(255,255,255,0.35),transparent);
+  border-radius:inherit;pointer-events:none;
+}
+
+.reveal{opacity:0;transform:translateY(40px);transition:all 0.9s cubic-bezier(0.4,0,0.2,1)}
+.reveal.active{opacity:1;transform:translateY(0)}
+.reveal-delay-1{transition-delay:.12s}
+.reveal-delay-2{transition-delay:.24s}
+.reveal-delay-3{transition-delay:.36s}
+.reveal-delay-4{transition-delay:.48s}
+
+.pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 16px;border-radius:100px;
+  font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.6), 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.flow-card{transition:all 0.5s cubic-bezier(0.4,0,0.2,1);border-radius:24px;overflow:hidden}
+.flow-card:hover{transform:translateY(-6px) scale(1.005);box-shadow:0 32px 80px rgba(0,0,0,0.10),0 8px 24px rgba(0,0,0,0.05)}
+
+.insight-table th{
+  background:linear-gradient(135deg,rgba(13,148,136,0.10),rgba(59,130,246,0.05));
+  font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.1em;
+  color:#0f766e;padding:14px 20px;text-align:left;
+  border-bottom:1px solid rgba(13,148,136,0.08);
+}
+.insight-table td{
+  padding:14px 20px;font-size:13px;color:#374151;
+  border-bottom:1px solid rgba(0,0,0,0.03);line-height:1.7;
+}
+.insight-table tr:hover td{background:rgba(13,148,136,0.025)}
+
+.nav-link{color:rgba(255,255,255,0.85);transition:color 0.3s ease}
+.nav-link:hover{color:rgba(255,255,255,1)}
+.nav-scrolled .nav-link{color:#6b7280}
+.nav-scrolled .nav-link:hover{color:#0d9488}
+.nav-logo{color:#ffffff;transition:color 0.3s ease}
+.nav-scrolled .nav-logo{color:#1a1a2e}
+.nav-menu-icon{color:#ffffff;transition:color 0.3s ease}
+.nav-scrolled .nav-menu-icon{color:#374151}
+
+.nav-scrolled{
+  background:rgba(255,255,255,0.88)!important;
+  backdrop-filter:blur(28px) saturate(1.6)!important;
+  -webkit-backdrop-filter:blur(28px) saturate(1.6)!important;
+  box-shadow:0 4px 30px rgba(0,0,0,0.06),inset 0 1px 0 rgba(255,255,255,0.9)!important;
+}
+
+.hero-gradient{background:linear-gradient(140deg,#0c6b61 0%,#0d9488 25%,#0a7c73 50%,#115e59 75%,#0e4a45 100%)}
+
+@keyframes float{0%,100%{transform:translateY(0) rotate(0)}33%{transform:translateY(-14px) rotate(2deg)}66%{transform:translateY(7px) rotate(-1deg)}}
+@keyframes float-slow{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-22px) scale(1.06)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes glow-pulse{0%,100%{opacity:0.4;filter:blur(40px)}50%{opacity:0.7;filter:blur(50px)}}
+@keyframes border-rotate{0%{--angle:0deg}100%{--angle:360deg}}
+@keyframes line-grow{0%{transform:scaleX(0)}100%{transform:scaleX(1)}}
+@keyframes fade-up{0%{opacity:0;transform:translateY(16px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes tag-slide{0%{opacity:0;transform:translateX(-12px) scale(0.95)}100%{opacity:1;transform:translateX(0) scale(1)}}
+.float{animation:float 6s ease-in-out infinite}
+.float-slow{animation:float-slow 8s ease-in-out infinite}
+
+.counter{font-variant-numeric:tabular-nums}
+.quote-mark{font-family:'Playfair Display',serif;font-size:140px;line-height:.8;color:rgba(45,212,191,0.15)}
+
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:linear-gradient(180deg,rgba(13,148,136,0.3),rgba(59,130,246,0.2));border-radius:100px}
+
+.persona-ring{
+  background:linear-gradient(135deg,#0d9488,#3b82f6,#8b5cf6);
+  padding:3px;border-radius:50%;
+  box-shadow:0 4px 16px rgba(13,148,136,0.25);
+}
+
+.method-icon{
+  width:52px;height:52px;border-radius:16px;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(145deg,rgba(13,148,136,0.12),rgba(59,130,246,0.08));
+  color:#0d9488;flex-shrink:0;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.5),0 2px 8px rgba(13,148,136,0.08);
+}
+
+.mockup-frame{
+  border-radius:20px;overflow:hidden;
+  box-shadow:0 24px 72px rgba(0,0,0,0.14),0 0 0 1px rgba(0,0,0,0.04),inset 0 1px 0 rgba(255,255,255,0.3);
+}
+
+.impact-bar{
+  height:8px;border-radius:100px;
+  background:linear-gradient(90deg,#0d9488,#2dd4bf,#5eead4);
+  box-shadow:0 2px 8px rgba(13,148,136,0.3),inset 0 1px 0 rgba(255,255,255,0.4);
+  transition:width 1.8s cubic-bezier(0.4,0,0.2,1);
+}
+
+.chip{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:4px 10px;border-radius:8px;font-size:10px;font-weight:700;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.5);
+}
+
+.collab-step{position:relative;padding-left:40px}
+.collab-step::before{content:'';position:absolute;left:17px;top:40px;bottom:-24px;width:2px;background:linear-gradient(180deg,rgba(13,148,136,0.3),rgba(13,148,136,0.03))}
+.collab-step:last-child::before{display:none}
+.collab-dot{position:absolute;left:6px;top:8px;width:22px;height:22px;border-radius:50%;background:linear-gradient(145deg,#14b8a6,#0d9488);box-shadow:0 4px 16px rgba(13,148,136,0.35),inset 0 1px 0 rgba(255,255,255,0.3)}
+
+.shimmer-text{
+  background:linear-gradient(90deg,#0d9488,#3b82f6,#8b5cf6,#f472b6,#0d9488);
+  background-size:200% auto;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  animation:shimmer 4s linear infinite;
+}
+
+.btn-glossy{
+  position:relative;overflow:hidden;
+  background:linear-gradient(145deg,#ffffff 0%,#f8fafc 100%);
+  box-shadow:0 4px 16px rgba(0,0,0,0.08),0 1px 3px rgba(0,0,0,0.04),
+    inset 0 2px 0 rgba(255,255,255,1),inset 0 -1px 0 rgba(0,0,0,0.04);
+  transition:all 0.3s ease;
+}
+.btn-glossy::before{content:'';position:absolute;top:0;left:0;right:0;height:50%;background:linear-gradient(180deg,rgba(255,255,255,0.7),transparent);pointer-events:none}
+.btn-glossy:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,0,0,0.1),0 2px 6px rgba(0,0,0,0.04),inset 0 2px 0 rgba(255,255,255,1)}
+
+.btn-glass{
+  position:relative;overflow:hidden;
+  background:rgba(255,255,255,0.12);backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,0.2);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.15);
+  transition:all 0.3s ease;
+}
+.btn-glass:hover{background:rgba(255,255,255,0.22);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.1),inset 0 1px 0 rgba(255,255,255,0.2)}
+
+/* ===== END-TO-END HERO TAGLINE ===== */
+.hero-tagline-wrap{
+  position:relative;
+  display:inline-block;
+  padding:6px 0;
+}
+.hero-tagline-glow{
+  position:absolute;
+  inset:-20px -40px;
+  background: radial-gradient(ellipse at center, rgba(13,148,136,0.2) 0%, rgba(59,130,246,0.08) 40%, transparent 70%);
+  border-radius:60px;
+  animation: glow-pulse 4s ease-in-out infinite;
+  pointer-events:none;
+  z-index:0;
+}
+.hero-tagline-bg{
+  position:absolute;
+  inset:0;
+  background: linear-gradient(135deg,
+    rgba(255,255,255,0.06) 0%,
+    rgba(255,255,255,0.03) 50%,
+    rgba(255,255,255,0.06) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius:20px;
+  z-index:0;
+}
+.hero-tagline-bg::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  border-radius:20px;
+  padding:1px;
+  background: linear-gradient(135deg,
+    rgba(45,212,191,0.35),
+    rgba(59,130,246,0.25),
+    rgba(168,85,247,0.2),
+    rgba(244,114,182,0.15),
+    rgba(45,212,191,0.25));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events:none;
+}
+.hero-tagline-bg::after{
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;
+  height:50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.08), transparent);
+  border-radius:20px 20px 0 0;
+  pointer-events:none;
+}
+.hero-tagline-text{
+  position:relative;
+  z-index:1;
+  background:linear-gradient(90deg,#5eead4,#38bdf8,#a78bfa,#f9a8d4,#5eead4);
+  background-size:300% auto;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  animation:shimmer 5s linear infinite;
+  filter: drop-shadow(0 0 30px rgba(45,212,191,0.3));
+}
+.hero-tagline-line{
+  display:block;
+  height:2px;
+  margin:8px auto 0;
+  border-radius:100px;
+  background:linear-gradient(90deg,transparent,rgba(45,212,191,0.5),rgba(59,130,246,0.4),rgba(168,85,247,0.3),transparent);
+  transform-origin:center;
+}
+.hero-tagline-line.active{
+  animation:line-grow 1s cubic-bezier(0.4,0,0.2,1) 0.6s forwards;
+}
+.hero-tagline-dots{
+  display:flex;
+  justify-content:center;
+  gap:6px;
+  margin-top:10px;
+  position:relative;
+  z-index:1;
+}
+.hero-tagline-dots span{
+  width:4px;height:4px;border-radius:50%;
+  background:rgba(255,255,255,0.25);
+}
+.hero-tagline-dots span:nth-child(1){background:rgba(45,212,191,0.6);box-shadow:0 0 8px rgba(45,212,191,0.4)}
+.hero-tagline-dots span:nth-child(2){background:rgba(59,130,246,0.5);box-shadow:0 0 8px rgba(59,130,246,0.3)}
+.hero-tagline-dots span:nth-child(3){background:rgba(168,85,247,0.5);box-shadow:0 0 8px rgba(168,85,247,0.3)}
+
+/* small tag above tagline */
+.hero-tag-label{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 12px;border-radius:100px;
+  font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  color:rgba(255,255,255,0.7);
+  border:1px solid rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.04);
+  margin-bottom:10px;
+}
+.hero-tag-label i{width:10px;height:10px}
+</style>
+</head>
+<body>
+
+<div class="mesh-bg"></div>
+
+<!-- NAV -->
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-50 transition-all duration-500" style="background:transparent">
+  <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-2xl icon-badge bg-gradient-to-br from-brand-400 via-brand-500 to-brand-700 flex items-center justify-center">
+        <i data-lucide="heart-pulse" class="w-5 h-5 text-white"></i>
+      </div>
+      <span class="font-bold text-lg tracking-tight nav-logo">SATA Health</span>
+    </div>
+    <div class="hidden md:flex items-center gap-8">
+      <a href="#overview" class="nav-link text-sm font-medium">Overview</a>
+      <a href="#research" class="nav-link text-sm font-medium">Research</a>
+      <a href="#flows" class="nav-link text-sm font-medium">Experience</a>
+      <a href="#impact" class="nav-link text-sm font-medium">Impact</a>
+      <a href="#reflection" class="nav-link text-sm font-medium">Reflection</a>
+    </div>
+    <button id="mobileMenuBtn" class="md:hidden w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15)">
+      <i data-lucide="menu" class="w-5 h-5 nav-menu-icon"></i>
+    </button>
+  </div>
+  <div id="mobileMenu" class="hidden md:hidden glass-strong mx-4 mb-4 rounded-2xl overflow-hidden">
+    <div class="p-3 flex flex-col gap-0.5">
+      <a href="#overview" class="mobile-link px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-brand-50 hover:text-brand-700 transition-colors">Overview</a>
+      <a href="#research" class="mobile-link px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-brand-50 hover:text-brand-700 transition-colors">Research</a>
+      <a href="#flows" class="mobile-link px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-brand-50 hover:text-brand-700 transition-colors">Experience</a>
+      <a href="#impact" class="mobile-link px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-brand-50 hover:text-brand-700 transition-colors">Impact</a>
+      <a href="#reflection" class="mobile-link px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-brand-50 hover:text-brand-700 transition-colors">Reflection</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="relative min-h-screen flex items-center justify-center overflow-hidden">
+  <div class="absolute inset-0 hero-gradient"></div>
+  <div class="absolute inset-0" style="background:radial-gradient(ellipse at 25% 45%,rgba(45,212,191,0.2) 0%,transparent 55%)"></div>
+  <div class="absolute inset-0" style="background:radial-gradient(ellipse at 75% 25%,rgba(59,130,246,0.12) 0%,transparent 50%)"></div>
+  <div class="absolute inset-0" style="background:radial-gradient(ellipse at 60% 80%,rgba(168,85,247,0.08) 0%,transparent 45%)"></div>
+
+  <div class="absolute top-1/4 left-[8%] w-72 h-72 rounded-full bg-brand-300/15 float-slow" style="filter:blur(70px)"></div>
+  <div class="absolute bottom-1/4 right-[8%] w-56 h-56 rounded-full bg-blue-300/12 float" style="filter:blur(60px)"></div>
+  <div class="absolute top-1/3 right-[22%] w-4 h-4 rounded-full bg-brand-200/50 float" style="box-shadow:0 0 20px rgba(45,212,191,0.4)"></div>
+  <div class="absolute bottom-1/3 left-[18%] w-3 h-3 rounded-full bg-blue-200/50 float-slow" style="box-shadow:0 0 16px rgba(59,130,246,0.4)"></div>
+  <div class="absolute top-[60%] right-[40%] w-2 h-2 rounded-full bg-violet-200/40 float" style="box-shadow:0 0 12px rgba(168,85,247,0.3)"></div>
+
+  <div class="absolute inset-0 opacity-[0.025]" style="background-image:linear-gradient(rgba(255,255,255,0.6) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.6) 1px,transparent 1px);background-size:64px 64px"></div>
+  <div class="absolute top-0 left-1/4 w-px h-full" style="background:linear-gradient(180deg,transparent,rgba(255,255,255,0.06) 30%,rgba(255,255,255,0.06) 70%,transparent)"></div>
+  <div class="absolute top-0 right-1/3 w-px h-full" style="background:linear-gradient(180deg,transparent,rgba(255,255,255,0.04) 40%,rgba(255,255,255,0.04) 60%,transparent)"></div>
+
+  <div class="relative z-10 max-w-5xl mx-auto px-6 text-center pt-20">
+    <div class="reveal">
+      <div class="pill bg-white/10 text-brand-200 border border-white/15 mb-8 mx-auto" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.15),0 4px 16px rgba(0,0,0,0.1)">
+        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+        Case Study · Healthcare UX
+      </div>
+    </div>
+
+    <h1 class="reveal reveal-delay-1 font-serif text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.08] tracking-tight mb-7">
+      SATA Health<br>
+
+      <!-- ===== END-TO-END TAGLINE BLOCK ===== -->
+      <span class="hero-tagline-wrap">
+        <span class="hero-tagline-glow"></span>
+        <!-- <span class="hero-tagline-bg"></span> -->
+        <span class="hero-tagline-text">End-to-End Healthcare</span>
+        <span class="hero-tagline-line" style="transform:scaleX(0)"></span>
+        <span class="hero-tagline-dots">
+          <span></span><span></span><span></span>
+        </span>
+      </span>
+      <br>
+
+      <span class="text-white/90">Experience Redesign</span>
+    </h1>
+
+    <p class="reveal reveal-delay-2 text-lg md:text-xl text-brand-100/70 max-w-2xl mx-auto mb-11 leading-relaxed font-light">
+      Integrating clinical workflows into a seamless digital journey — from first appointment booking to post-consultation follow-up.
+    </p>
+    <div class="reveal reveal-delay-3 flex flex-wrap justify-center gap-5">
+      <a href="#overview" class="btn-glossy inline-flex items-center gap-2 px-9 py-4 text-brand-800 font-semibold rounded-2xl">
+        View Case Study
+        <i data-lucide="arrow-down" class="w-4 h-4"></i>
+      </a>
+      <a href="#impact" class="btn-glass inline-flex items-center gap-2 px-9 py-4 text-white font-semibold rounded-2xl">
+        See Impact
+      </a>
+    </div>
+  </div>
+
+  <div class="absolute bottom-0 left-0 right-0 h-40" style="background:linear-gradient(to top,#f0f2f5 0%,rgba(240,242,245,0.8) 40%,transparent 100%)"></div>
+</section>
+
+<!-- OUTCOME SNAPSHOT -->
+<section id="overview" class="relative py-24 md:py-32">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center mb-16 reveal">
+      <div class="pill bg-brand-50 text-brand-700 border border-brand-100 mb-5 mx-auto"><i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i>Outcome Snapshot</div>
+      <h2 class="font-serif text-3xl md:text-5xl font-bold tracking-tight mb-4">Measurable Transformation</h2>
+      <p class="text-gray-500 text-lg max-w-xl mx-auto">Real outcomes from a design-driven approach to healthcare digitalization.</p>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-5 md:gap-6">
+      <div class="stat-card glass-strong glossy rounded-3xl p-7 md:p-8 text-center reveal reveal-delay-1">
+        <div class="w-14 h-14 mx-auto mb-5 rounded-2xl icon-badge bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center relative z-10"><i data-lucide="clock" class="w-6 h-6 text-white"></i></div>
+        <div class="counter text-4xl md:text-5xl font-extrabold text-brand-700 mb-2 relative z-10" data-target="42" data-suffix="%">0%</div>
+        <div class="text-sm text-gray-500 font-medium relative z-10">Booking Time<br>Reduction</div>
+      </div>
+      <div class="stat-card glass-strong glossy rounded-3xl p-7 md:p-8 text-center reveal reveal-delay-2">
+        <div class="w-14 h-14 mx-auto mb-5 rounded-2xl icon-badge bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center relative z-10"><i data-lucide="user-minus" class="w-6 h-6 text-white"></i></div>
+        <div class="counter text-4xl md:text-5xl font-extrabold text-blue-600 mb-2 relative z-10" data-target="35" data-suffix="%">0%</div>
+        <div class="text-sm text-gray-500 font-medium relative z-10">Patient Drop-off<br>Decrease</div>
+      </div>
+      <div class="stat-card glass-strong glossy rounded-3xl p-7 md:p-8 text-center reveal reveal-delay-3">
+        <div class="w-14 h-14 mx-auto mb-5 rounded-2xl icon-badge bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center relative z-10"><i data-lucide="trending-up" class="w-6 h-6 text-white"></i></div>
+        <div class="counter text-4xl md:text-5xl font-extrabold text-violet-600 mb-2 relative z-10" data-target="28" data-suffix="%">0%</div>
+        <div class="text-sm text-gray-500 font-medium relative z-10">Doctor Efficiency<br>Increase</div>
+      </div>
+      <div class="stat-card glass-strong glossy rounded-3xl p-7 md:p-8 text-center reveal reveal-delay-4">
+        <div class="w-14 h-14 mx-auto mb-5 rounded-2xl icon-badge bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center relative z-10"><i data-lucide="star" class="w-6 h-6 text-white"></i></div>
+        <div class="counter text-4xl md:text-5xl font-extrabold text-amber-600 mb-2 relative z-10" data-target="4.5" data-suffix="" data-decimal="true">0</div>
+        <div class="text-sm text-gray-500 font-medium relative z-10">CSAT Score<br>Out of 5.0</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEM SPACE -->
+<section class="py-24 md:py-32">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="grid lg:grid-cols-2 gap-8 md:gap-10">
+      <div class="reveal">
+        <div class="gradient-border p-8 md:p-10 rounded-[24px]">
+          <div class="flex items-center gap-3 mb-7"><div class="w-11 h-11 rounded-2xl icon-badge bg-gradient-to-br from-red-400 to-red-500 flex items-center justify-center"><i data-lucide="alert-triangle" class="w-5 h-5 text-white"></i></div><h3 class="font-serif text-2xl font-bold">Business Challenges</h3></div>
+          <div class="space-y-5">
+            <div class="flex gap-4"><div class="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0 mt-0.5" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><span class="text-xs font-bold text-red-500">01</span></div><div><p class="font-semibold text-gray-800 mb-1">Fragmented Systems</p><p class="text-sm text-gray-500 leading-relaxed">Separate legacy platforms for booking, EMR, billing, and pharmacy creating data silos and operational inefficiency.</p></div></div>
+            <div class="flex gap-4"><div class="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0 mt-0.5" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><span class="text-xs font-bold text-red-500">02</span></div><div><p class="font-semibold text-gray-800 mb-1">Revenue Leakage</p><p class="text-sm text-gray-500 leading-relaxed">High patient drop-off during booking and between visits directly impacting clinic revenue and growth.</p></div></div>
+            <div class="flex gap-4"><div class="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0 mt-0.5" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><span class="text-xs font-bold text-red-500">03</span></div><div><p class="font-semibold text-gray-800 mb-1">Scalability Ceiling</p><p class="text-sm text-gray-500 leading-relaxed">Manual processes preventing expansion beyond current clinic capacity without proportional staff increase.</p></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="reveal reveal-delay-2">
+        <div class="gradient-border p-8 md:p-10 rounded-[24px]">
+          <div class="flex items-center gap-3 mb-7"><div class="w-11 h-11 rounded-2xl icon-badge bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center"><i data-lucide="frown" class="w-5 h-5 text-white"></i></div><h3 class="font-serif text-2xl font-bold">User Pain Points</h3></div>
+          <div class="space-y-5">
+            <div class="flex gap-4"><div class="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0 mt-0.5" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><span class="text-xs font-bold text-orange-500">01</span></div><div><p class="font-semibold text-gray-800 mb-1">Confusing Booking Journey</p><p class="text-sm text-gray-500 leading-relaxed">Patients face 6+ steps across multiple screens to book a single appointment, leading to 35% abandonment.</p></div></div>
+            <div class="flex gap-4"><div class="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0 mt-0.5" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><span class="text-xs font-bold text-orange-500">02</span></div><div><p class="font-semibold text-gray-800 mb-1">No Visibility into Wait Times</p><p class="text-sm text-gray-500 leading-relaxed">Patients arrive without knowing queue status, causing frustration and unpredictable clinic congestion.</p></div></div>
+            <div class="flex gap-4"><div class="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0 mt-0.5" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><span class="text-xs font-bold text-orange-500">03</span></div><div><p class="font-semibold text-gray-800 mb-1">Disconnected Health Data</p><p class="text-sm text-gray-500 leading-relaxed">Patients can't access their records, lab results, or prescriptions — forcing repeated clinic visits for basic information.</p></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mt-14 reveal">
+      <div class="glass-strong glossy rounded-3xl p-8 md:p-12 relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-80 h-80 rounded-full bg-brand-200/30 -translate-y-1/2 translate-x-1/3" style="filter:blur(70px)"></div>
+        <div class="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-blue-200/20 translate-y-1/2 -translate-x-1/4" style="filter:blur(50px)"></div>
+        <div class="relative z-10">
+          <div class="pill bg-brand-50 text-brand-700 border border-brand-100 mb-5"><i data-lucide="palette" class="w-3.5 h-3.5"></i>Design Philosophy</div>
+          <h3 class="font-serif text-3xl md:text-4xl font-bold mb-5">Atmospheric Depth & Clarity</h3>
+          <p class="text-gray-600 text-lg leading-relaxed max-w-3xl">We believed that healthcare interfaces shouldn't feel clinical in the cold sense — they should feel <strong class="text-brand-700">calm, trustworthy, and intuitively clear</strong>. Every design decision was rooted in reducing cognitive load while maintaining the gravitas that medical contexts demand. The visual language balances <em class="font-serif text-brand-600">warmth with precision</em>, creating an experience that feels human first.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RESEARCH -->
+<section id="research" class="py-24 md:py-32 relative">
+  <div class="absolute inset-0" style="background:linear-gradient(180deg,transparent,rgba(13,148,136,0.025) 50%,transparent)"></div>
+  <div class="max-w-7xl mx-auto px-6 relative">
+    <div class="text-center mb-16 reveal">
+      <div class="pill bg-brand-50 text-brand-700 border border-brand-100 mb-5 mx-auto"><i data-lucide="search" class="w-3.5 h-3.5"></i>Discovery Phase</div>
+      <h2 class="font-serif text-3xl md:text-5xl font-bold tracking-tight mb-4">Humanizing Healthcare Through Research</h2>
+      <p class="text-gray-500 text-lg max-w-xl mx-auto">Deep qualitative research to understand the ecosystem from every stakeholder perspective.</p>
+    </div>
+    <div class="grid md:grid-cols-3 gap-6 mb-16">
+      <div class="reveal reveal-delay-1 glass-strong glossy rounded-3xl p-7 hover:shadow-2xl transition-all duration-400 hover:-translate-y-2">
+        <div class="flex items-center gap-4 mb-5 relative z-10"><div class="persona-ring"><div class="w-14 h-14 rounded-full bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center"><i data-lucide="user" class="w-6 h-6 text-brand-700"></i></div></div><div><h4 class="font-bold text-gray-900">Anita</h4><p class="text-xs text-gray-400 font-semibold">32 · Patient</p></div></div>
+        <p class="text-sm text-gray-600 leading-relaxed mb-4 relative z-10">Working mother who juggles multiple clinic visits. Needs quick booking, clear wait times, and access to her family's health records.</p>
+        <div class="flex flex-wrap gap-1.5 relative z-10"><span class="chip bg-brand-50 text-brand-700">Time-poor</span><span class="chip bg-blue-50 text-blue-700">Tech-savvy</span><span class="chip bg-violet-50 text-violet-700">Anxious</span></div>
+      </div>
+      <div class="reveal reveal-delay-2 glass-strong glossy rounded-3xl p-7 hover:shadow-2xl transition-all duration-400 hover:-translate-y-2">
+        <div class="flex items-center gap-4 mb-5 relative z-10"><div class="persona-ring"><div class="w-14 h-14 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center"><i data-lucide="stethoscope" class="w-6 h-6 text-blue-700"></i></div></div><div><h4 class="font-bold text-gray-900">Dr. Ramesh</h4><p class="text-xs text-gray-400 font-semibold">45 · Specialist</p></div></div>
+        <p class="text-sm text-gray-600 leading-relaxed mb-4 relative z-10">Senior specialist managing 40+ patients daily. Needs efficient patient handoff, quick data access, and minimal admin tasks.</p>
+        <div class="flex flex-wrap gap-1.5 relative z-10"><span class="chip bg-brand-50 text-brand-700">Overwhelmed</span><span class="chip bg-red-50 text-red-700">Data-driven</span><span class="chip bg-amber-50 text-amber-700">Efficiency-first</span></div>
+      </div>
+      <div class="reveal reveal-delay-3 glass-strong glossy rounded-3xl p-7 hover:shadow-2xl transition-all duration-400 hover:-translate-y-2">
+        <div class="flex items-center gap-4 mb-5 relative z-10"><div class="persona-ring"><div class="w-14 h-14 rounded-full bg-gradient-to-br from-violet-100 to-violet-200 flex items-center justify-center"><i data-lucide="clipboard-list" class="w-6 h-6 text-violet-700"></i></div></div><div><h4 class="font-bold text-gray-900">Clinic Manager</h4><p class="text-xs text-gray-400 font-semibold">38 · Operations</p></div></div>
+        <p class="text-sm text-gray-600 leading-relaxed mb-4 relative z-10">Responsible for daily operations and patient flow. Needs real-time visibility into queue status and staff utilization.</p>
+        <div class="flex flex-wrap gap-1.5 relative z-10"><span class="chip bg-violet-50 text-violet-700">Analytical</span><span class="chip bg-brand-50 text-brand-700">Process-focused</span><span class="chip bg-blue-50 text-blue-700">Multi-tasker</span></div>
+      </div>
+    </div>
+    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-5 mb-16">
+      <div class="reveal reveal-delay-1 glass glossy rounded-2xl p-6"><div class="method-icon mb-4"><i data-lucide="mic" class="w-5 h-5"></i></div><div class="text-3xl font-extrabold text-brand-700 mb-1 relative z-10">15+</div><div class="text-sm font-semibold text-gray-800 relative z-10">In-Depth Interviews</div><p class="text-xs text-gray-400 mt-1 relative z-10">Patients, doctors, nurses, admin staff</p></div>
+      <div class="reveal reveal-delay-2 glass glossy rounded-2xl p-6"><div class="method-icon mb-4"><i data-lucide="eye" class="w-5 h-5"></i></div><div class="text-3xl font-extrabold text-brand-700 mb-1 relative z-10">40+</div><div class="text-sm font-semibold text-gray-800 relative z-10">Contextual Observations</div><p class="text-xs text-gray-400 mt-1 relative z-10">Shadowing clinic workflows end-to-end</p></div>
+      <div class="reveal reveal-delay-3 glass glossy rounded-2xl p-6"><div class="method-icon mb-4"><i data-lucide="file-text" class="w-5 h-5"></i></div><div class="text-3xl font-extrabold text-brand-700 mb-1 relative z-10">5</div><div class="text-sm font-semibold text-gray-800 relative z-10">Journey Maps Created</div><p class="text-xs text-gray-400 mt-1 relative z-10">Booking, check-in, consult, follow-up</p></div>
+      <div class="reveal reveal-delay-4 glass glossy rounded-2xl p-6"><div class="method-icon mb-4"><i data-lucide="layers" class="w-5 h-5"></i></div><div class="text-3xl font-extrabold text-brand-700 mb-1 relative z-10">3</div><div class="text-sm font-semibold text-gray-800 relative z-10">System Audits</div><p class="text-xs text-gray-400 mt-1 relative z-10">Evaluating existing tech stack and gaps</p></div>
+    </div>
+    <div class="reveal">
+      <h3 class="font-serif text-2xl font-bold mb-7">Key Insights & Observations</h3>
+      <div class="space-y-4 mb-16">
+        <div class="glass-strong glossy rounded-2xl p-6 flex gap-4 items-start"><div class="w-11 h-11 rounded-2xl icon-badge bg-gradient-to-br from-brand-400 to-brand-500 flex items-center justify-center flex-shrink-0"><i data-lucide="lightbulb" class="w-5 h-5 text-white"></i></div><div class="relative z-10"><p class="font-semibold text-gray-800 mb-1">Trust is built through transparency, not decoration</p><p class="text-sm text-gray-500 leading-relaxed">Patients valued clear information about wait times, doctor availability, and costs far more than visual polish. Transparency was the #1 trust signal.</p></div></div>
+        <div class="glass-strong glossy rounded-2xl p-6 flex gap-4 items-start"><div class="w-11 h-11 rounded-2xl icon-badge bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center flex-shrink-0"><i data-lucide="lightbulb" class="w-5 h-5 text-white"></i></div><div class="relative z-10"><p class="font-semibold text-gray-800 mb-1">Doctors spend 30% of time on non-clinical tasks</p><p class="text-sm text-gray-500 leading-relaxed">Manual data entry, patient handoff communication, and searching for records consumed nearly a third of each consultation window.</p></div></div>
+        <div class="glass-strong glossy rounded-2xl p-6 flex gap-4 items-start"><div class="w-11 h-11 rounded-2xl icon-badge bg-gradient-to-br from-violet-400 to-violet-500 flex items-center justify-center flex-shrink-0"><i data-lucide="lightbulb" class="w-5 h-5 text-white"></i></div><div class="relative z-10"><p class="font-semibold text-gray-800 mb-1">The "between visit" gap is where patients feel most abandoned</p><p class="text-sm text-gray-500 leading-relaxed">The period between booking and appointment, and between consultation and follow-up, had zero digital support — yet carried the highest anxiety.</p></div></div>
+      </div>
+    </div>
+    <div class="reveal">
+      <h3 class="font-serif text-2xl font-bold mb-7">Problem Breakdown</h3>
+      <div class="glass-strong glossy rounded-3xl overflow-hidden">
+        <table class="insight-table w-full"><thead><tr><th class="w-1/4">Layer</th><th class="w-2/5">Problem</th><th class="w-1/3">Impact</th></tr></thead>
+        <tbody>
+          <tr><td><span class="chip bg-red-50 text-red-700">Surface</span></td><td>Complex 6-step booking flow with redundant fields</td><td class="text-red-600 font-semibold">35% drop-off rate</td></tr>
+          <tr><td><span class="chip bg-orange-50 text-orange-700">Structure</span></td><td>No unified patient timeline across touchpoints</td><td class="text-orange-600 font-semibold">Fragmented experience</td></tr>
+          <tr><td><span class="chip bg-amber-50 text-amber-700">System</span></td><td>Siloed databases between departments</td><td class="text-amber-600 font-semibold">Data inconsistency</td></tr>
+          <tr><td><span class="chip bg-violet-50 text-violet-700">Strategy</span></td><td>No digital-first vision for patient engagement</td><td class="text-violet-600 font-semibold">Competitive disadvantage</td></tr>
+        </tbody></table>
+      </div>
+    </div>
+    <div class="mt-14 reveal">
+      <div class="glass-dark rounded-3xl p-8 md:p-12 text-white relative overflow-hidden">
+        <div class="absolute inset-0" style="background:radial-gradient(ellipse at 80% 20%,rgba(13,148,136,0.22),transparent 55%)"></div>
+        <div class="absolute top-0 left-0 right-0 h-px" style="background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent)"></div>
+        <div class="relative">
+          <div class="pill bg-white/10 text-brand-200 border border-white/10 mb-5"><i data-lucide="compass" class="w-3.5 h-3.5"></i>Strategy & Vision</div>
+          <h3 class="font-serif text-3xl md:text-4xl font-bold mb-5">One Platform. One Journey.</h3>
+          <p class="text-gray-300 text-lg leading-relaxed max-w-3xl mb-9">Our strategic vision was to create a unified healthcare platform that wraps around the entire patient lifecycle — from discovery to recovery — while empowering clinical staff with intelligent tools that reduce cognitive burden.</p>
+          <div class="grid md:grid-cols-3 gap-4">
+            <div class="bg-white/5 rounded-2xl p-5 border border-white/10" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.06)"><i data-lucide="smartphone" class="w-6 h-6 text-brand-300 mb-3"></i><h4 class="font-semibold text-sm mb-1">Patient-First Mobile</h4><p class="text-xs text-gray-400 leading-relaxed">A mobile-native experience for on-the-go health management</p></div>
+            <div class="bg-white/5 rounded-2xl p-5 border border-white/10" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.06)"><i data-lucide="monitor" class="w-6 h-6 text-blue-300 mb-3"></i><h4 class="font-semibold text-sm mb-1">Clinical Command Center</h4><p class="text-xs text-gray-400 leading-relaxed">Desktop-first dashboard for doctors to manage their day</p></div>
+            <div class="bg-white/5 rounded-2xl p-5 border border-white/10" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.06)"><i data-lucide="shuffle" class="w-6 h-6 text-violet-300 mb-3"></i><h4 class="font-semibold text-sm mb-1">Adaptive Queue System</h4><p class="text-xs text-gray-400 leading-relaxed">Real-time patient flow with predictive wait times</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CORE EXPERIENCE FLOWS -->
+<section id="flows" class="py-24 md:py-32">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center mb-16 reveal">
+      <div class="pill bg-brand-50 text-brand-700 border border-brand-100 mb-5 mx-auto"><i data-lucide="layout" class="w-3.5 h-3.5"></i>Core Experience</div>
+      <h2 class="font-serif text-3xl md:text-5xl font-bold tracking-tight mb-4">Core Experience Flows</h2>
+      <p class="text-gray-500 text-lg max-w-xl mx-auto">Three interconnected interfaces serving the complete healthcare ecosystem.</p>
+    </div>
+    <div class="mb-10 reveal">
+      <div class="flow-card glass-strong">
+        <div class="grid lg:grid-cols-2 gap-0">
+          <div class="p-8 md:p-12 flex flex-col justify-center">
+            <div class="pill bg-brand-50 text-brand-700 border border-brand-100 mb-5 w-fit"><i data-lucide="smartphone" class="w-3.5 h-3.5"></i>Patient Dashboard</div>
+            <h3 class="font-serif text-2xl md:text-3xl font-bold mb-5">Your Health, In Your Hands</h3>
+            <p class="text-gray-500 leading-relaxed mb-7">A mobile-first interface that puts patients in control — book appointments in under 30 seconds, track vitals, access lab results, and manage prescriptions from a single, calming interface.</p>
+            <div class="space-y-3">
+              <div class="flex items-center gap-3"><div class="w-7 h-7 rounded-lg bg-brand-100 flex items-center justify-center" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><i data-lucide="check" class="w-3.5 h-3.5 text-brand-600"></i></div><span class="text-sm text-gray-600">One-tap appointment booking</span></div>
+              <div class="flex items-center gap-3"><div class="w-7 h-7 rounded-lg bg-brand-100 flex items-center justify-center" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><i data-lucide="check" class="w-3.5 h-3.5 text-brand-600"></i></div><span class="text-sm text-gray-600">Real-time vital signs tracking</span></div>
+              <div class="flex items-center gap-3"><div class="w-7 h-7 rounded-lg bg-brand-100 flex items-center justify-center" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><i data-lucide="check" class="w-3.5 h-3.5 text-brand-600"></i></div><span class="text-sm text-gray-600">Secure prescription & lab result access</span></div>
+            </div>
+          </div>
+          <div class="p-6 md:p-10 flex items-center justify-center" style="background:linear-gradient(145deg,rgba(13,148,136,0.04),rgba(59,130,246,0.02))">
+            <div class="mockup-frame w-full max-w-[280px] bg-white rounded-3xl overflow-hidden border border-gray-100/80">
+              <div class="bg-gradient-to-b from-gray-50 to-white px-4 py-2.5 flex items-center justify-between" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><span class="text-[10px] font-bold text-gray-400">9:41</span><div class="w-16 h-4 rounded-full bg-gray-200/80"></div><div class="flex gap-1"><div class="w-3 h-2 rounded-sm bg-gray-300/80"></div><div class="w-3 h-2 rounded-sm bg-gray-300/80"></div></div></div>
+              <div class="p-4">
+                <p class="text-[10px] text-gray-400 mb-0.5">Good morning,</p>
+                <p class="text-sm font-bold text-gray-900 mb-4">Anita 👋</p>
+                <div class="bg-gradient-to-br from-brand-500 to-brand-600 rounded-2xl p-3.5 mb-3.5 text-white relative overflow-hidden"><div class="absolute top-0 left-0 right-0 h-1/2" style="background:linear-gradient(180deg,rgba(255,255,255,0.15),transparent)"></div><p class="text-[9px] opacity-80 relative">Next Appointment</p><p class="text-xs font-bold relative">Dr. Ramesh</p><p class="text-[9px] opacity-80 relative">Today, 2:30 PM · Cardiology</p></div>
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                  <div class="bg-gray-50 rounded-xl p-2.5 text-center" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><i data-lucide="heart" class="w-4 h-4 text-red-400 mx-auto mb-1"></i><p class="text-[9px] text-gray-400">Heart Rate</p><p class="text-xs font-bold">72 bpm</p></div>
+                  <div class="bg-gray-50 rounded-xl p-2.5 text-center" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><i data-lucide="activity" class="w-4 h-4 text-blue-400 mx-auto mb-1"></i><p class="text-[9px] text-gray-400">BP</p><p class="text-xs font-bold">120/80</p></div>
+                </div>
+                <div class="bg-gray-50 rounded-xl p-2.5" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><p class="text-[9px] text-gray-400 mb-1.5 font-semibold">Book Appointment</p><div class="flex gap-1"><div class="h-6 flex-1 rounded-lg bg-brand-100"></div><div class="h-6 flex-1 rounded-lg bg-brand-500"></div><div class="h-6 flex-1 rounded-lg bg-brand-100"></div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mb-10 reveal reveal-delay-2">
+      <div class="flow-card glass-strong">
+        <div class="grid lg:grid-cols-2 gap-0">
+          <div class="p-6 md:p-10 flex items-center justify-center order-2 lg:order-1" style="background:linear-gradient(145deg,rgba(59,130,246,0.04),rgba(13,148,136,0.02))">
+            <div class="mockup-frame w-full max-w-[400px] bg-white rounded-3xl overflow-hidden border border-gray-100/80">
+              <div class="px-5 py-4 flex items-center justify-between" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8);border-bottom:1px solid rgba(0,0,0,0.03)">
+                <div><p class="text-xs font-bold text-gray-900">Afternoon Queue</p><p class="text-[10px] text-gray-400">Dr. Ramesh · Cardiology</p></div>
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl px-3 py-2 text-center" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><p class="text-[8px] text-blue-500 font-bold uppercase tracking-wider">Avg Wait</p><p class="text-base font-extrabold text-blue-700">14<span class="text-[10px] font-bold">min</span></p></div>
+              </div>
+              <div class="p-4 space-y-2">
+                <div class="bg-gradient-to-r from-brand-50 to-brand-100/40 rounded-2xl p-3.5 flex items-center gap-3 border border-brand-200/50" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.6)"><div class="w-9 h-9 rounded-full bg-gradient-to-br from-brand-200 to-brand-300 flex items-center justify-center text-[10px] font-bold text-brand-800" style="box-shadow:0 2px 8px rgba(13,148,136,0.15)">EG</div><div class="flex-1"><p class="text-xs font-bold text-gray-900">Elena Gilbert</p><p class="text-[10px] text-gray-400">Follow-up · Hypertension</p></div><span class="chip bg-brand-500 text-white text-[9px]" style="box-shadow:0 2px 8px rgba(13,148,136,0.25)">Next</span></div>
+                <div class="bg-gray-50/80 rounded-2xl p-3.5 flex items-center gap-3" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-600">MK</div><div class="flex-1"><p class="text-xs font-bold text-gray-900">Marcus Kim</p><p class="text-[10px] text-gray-400">New consult · Chest pain</p></div><span class="chip bg-gray-200 text-gray-600 text-[9px]">#2</span></div>
+                <div class="bg-gray-50/80 rounded-2xl p-3.5 flex items-center gap-3" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-600">SP</div><div class="flex-1"><p class="text-xs font-bold text-gray-900">Sarah Patel</p><p class="text-[10px] text-gray-400">Lab review · Diabetes</p></div><span class="chip bg-gray-200 text-gray-600 text-[9px]">#3</span></div>
+                <div class="bg-gray-50/80 rounded-2xl p-3.5 flex items-center gap-3" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-600">JL</div><div class="flex-1"><p class="text-xs font-bold text-gray-900">James Lee</p><p class="text-[10px] text-gray-400">Routine · Annual checkup</p></div><span class="chip bg-gray-200 text-gray-600 text-[9px]">#4</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="p-8 md:p-12 flex flex-col justify-center order-1 lg:order-2">
+            <div class="pill bg-blue-50 text-blue-700 border border-blue-100 mb-5 w-fit"><i data-lucide="list-ordered" class="w-3.5 h-3.5"></i>Afternoon Queue</div>
+            <h3 class="font-serif text-2xl md:text-3xl font-bold mb-5">Real-Time Patient Flow</h3>
+            <p class="text-gray-500 leading-relaxed mb-7">A live queue management system that gives reception, doctors, and patients real-time visibility into wait times and patient ordering. No more guesswork, no more hallway anxiety.</p>
+            <div class="space-y-3">
+              <div class="flex items-center gap-3"><div class="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><i data-lucide="check" class="w-3.5 h-3.5 text-blue-600"></i></div><span class="text-sm text-gray-600">Live average wait time calculation</span></div>
+              <div class="flex items-center gap-3"><div class="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><i data-lucide="check" class="w-3.5 h-3.5 text-blue-600"></i></div><span class="text-sm text-gray-600">Automatic patient prioritization</span></div>
+              <div class="flex items-center gap-3"><div class="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><i data-lucide="check" class="w-3.5 h-3.5 text-blue-600"></i></div><span class="text-sm text-gray-600">SMS notifications for queue updates</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="reveal reveal-delay-3">
+      <div class="flow-card glass-strong">
+        <div class="grid lg:grid-cols-2 gap-0">
+          <div class="p-8 md:p-12 flex flex-col justify-center">
+            <div class="pill bg-violet-50 text-violet-700 border border-violet-100 mb-5 w-fit"><i data-lucide="monitor" class="w-3.5 h-3.5"></i>Clinical Command Center</div>
+            <h3 class="font-serif text-2xl md:text-3xl font-bold mb-5">The Doctor's Cockpit</h3>
+            <p class="text-gray-500 leading-relaxed mb-7">A desktop-first clinical dashboard designed for speed and clarity. Doctors see everything they need — patient history, vitals trends, adherence scores, and clinical notes — in a single, focused view.</p>
+            <div class="space-y-3">
+              <div class="flex items-center gap-3"><div class="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><i data-lucide="check" class="w-3.5 h-3.5 text-violet-600"></i></div><span class="text-sm text-gray-600">Glucose & vitals trend visualization</span></div>
+              <div class="flex items-center gap-3"><div class="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><i data-lucide="check" class="w-3.5 h-3.5 text-violet-600"></i></div><span class="text-sm text-gray-600">94% adherence score at a glance</span></div>
+              <div class="flex items-center gap-3"><div class="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><i data-lucide="check" class="w-3.5 h-3.5 text-violet-600"></i></div><span class="text-sm text-gray-600">Integrated clinical note-taking</span></div>
+            </div>
+          </div>
+          <div class="p-6 md:p-10 flex items-center justify-center" style="background:linear-gradient(145deg,rgba(139,92,246,0.04),rgba(59,130,246,0.02))">
+            <div class="mockup-frame w-full max-w-[480px] bg-white rounded-3xl overflow-hidden border border-gray-100/80">
+              <div class="px-5 py-3.5 flex items-center justify-between" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8);border-bottom:1px solid rgba(0,0,0,0.03)">
+                <div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded-full bg-gradient-to-br from-violet-100 to-violet-200 flex items-center justify-center text-[9px] font-bold text-violet-700" style="box-shadow:0 2px 6px rgba(139,92,246,0.12)">EG</div><div><p class="text-xs font-bold text-gray-900">Elena Gilbert</p><p class="text-[9px] text-gray-400">Hypertension Management</p></div></div>
+                <div class="bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl px-2.5 py-1.5 text-center" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><p class="text-[7px] text-green-600 font-bold uppercase tracking-wider">Adherence</p><p class="text-sm font-extrabold text-green-700">94%</p></div>
+              </div>
+              <div class="p-4">
+                <div class="bg-gray-50/80 rounded-2xl p-3.5 mb-3" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><p class="text-[9px] text-gray-400 mb-2 font-bold uppercase tracking-wider">Blood Glucose Trend</p>
+                  <div class="flex items-end gap-[3px] h-16"><div class="flex-1 rounded-t-md" style="height:60%;background:linear-gradient(to top,rgba(139,92,246,0.3),rgba(139,92,246,0.5))"></div><div class="flex-1 rounded-t-md" style="height:45%;background:linear-gradient(to top,rgba(139,92,246,0.25),rgba(139,92,246,0.45))"></div><div class="flex-1 rounded-t-md" style="height:70%;background:linear-gradient(to top,rgba(139,92,246,0.3),rgba(139,92,246,0.55))"></div><div class="flex-1 rounded-t-md" style="height:55%;background:linear-gradient(to top,rgba(139,92,246,0.25),rgba(139,92,246,0.5))"></div><div class="flex-1 rounded-t-md" style="height:40%;background:linear-gradient(to top,rgba(139,92,246,0.2),rgba(139,92,246,0.4))"></div><div class="flex-1 rounded-t-md" style="height:80%;background:linear-gradient(to top,rgba(139,92,246,0.35),rgba(139,92,246,0.6))"></div><div class="flex-1 rounded-t-md" style="height:50%;background:linear-gradient(to top,rgba(139,92,246,0.25),rgba(139,92,246,0.5))"></div><div class="flex-1 rounded-t-md" style="height:35%;background:linear-gradient(to top,rgba(139,92,246,0.2),rgba(139,92,246,0.4))"></div><div class="flex-1 rounded-t-md" style="height:30%;background:linear-gradient(to top,rgba(139,92,246,0.15),rgba(139,92,246,0.35))"></div><div class="flex-1 rounded-t-md" style="height:90%;background:linear-gradient(to top,rgba(139,92,246,0.4),rgba(139,92,246,0.7))"></div><div class="flex-1 rounded-t-md" style="height:55%;background:linear-gradient(to top,rgba(139,92,246,0.25),rgba(139,92,246,0.5))"></div><div class="flex-1 rounded-t-md" style="height:40%;background:linear-gradient(to top,rgba(139,92,246,0.2),rgba(139,92,246,0.45))"></div></div>
+                  <div class="flex justify-between mt-1.5"><span class="text-[8px] text-gray-300 font-medium">Jan</span><span class="text-[8px] text-gray-300 font-medium">Jun</span><span class="text-[8px] text-gray-300 font-medium">Dec</span></div>
+                </div>
+                <div class="bg-gray-50/80 rounded-2xl p-3.5" style="box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)"><p class="text-[9px] text-gray-400 mb-2 font-bold uppercase tracking-wider">Clinical Notes</p><div class="space-y-2"><div class="h-2 bg-gray-200/80 rounded-full w-full"></div><div class="h-2 bg-gray-200/80 rounded-full w-4/5"></div><div class="h-2 bg-gray-200/80 rounded-full w-3/5"></div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- IMPACT -->
+<section id="impact" class="py-24 md:py-32 relative">
+  <div class="absolute inset-0" style="background:linear-gradient(180deg,transparent,rgba(13,148,136,0.025) 50%,transparent)"></div>
+  <div class="max-w-7xl mx-auto px-6 relative">
+    <div class="text-center mb-16 reveal">
+      <div class="pill bg-brand-50 text-brand-700 border border-brand-100 mb-5 mx-auto"><i data-lucide="zap" class="w-3.5 h-3.5"></i>Results</div>
+      <h2 class="font-serif text-3xl md:text-5xl font-bold tracking-tight mb-4">Quantifiable Impact on Patient Care</h2>
+      <p class="text-gray-500 text-lg max-w-xl mx-auto">Every metric tracked, every improvement validated through real-world usage data.</p>
+    </div>
+    <div class="grid md:grid-cols-2 gap-5 mb-16">
+      <div class="reveal glass-strong glossy rounded-3xl p-7"><div class="flex items-center justify-between mb-4 relative z-10"><div><p class="font-semibold text-gray-800 text-sm">Conversion Lag Reduction</p><p class="text-xs text-gray-400">Time from intent to booking</p></div><span class="text-2xl font-extrabold text-brand-600">35%</span></div><div class="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden relative z-10" style="box-shadow:inset 0 1px 2px rgba(0,0,0,0.04)"><div class="impact-bar" data-width="65" style="width:0%"></div></div></div>
+      <div class="reveal reveal-delay-1 glass-strong glossy rounded-3xl p-7"><div class="flex items-center justify-between mb-4 relative z-10"><div><p class="font-semibold text-gray-800 text-sm">Speed to Care</p><p class="text-xs text-gray-400">Booking to first consultation</p></div><span class="text-2xl font-extrabold text-blue-600">42%</span></div><div class="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden relative z-10" style="box-shadow:inset 0 1px 2px rgba(0,0,0,0.04)"><div class="impact-bar" data-width="42" style="width:0%;background:linear-gradient(90deg,#3b82f6,#60a5fa,#93c5fd);box-shadow:0 2px 8px rgba(59,130,246,0.3),inset 0 1px 0 rgba(255,255,255,0.4)"></div></div></div>
+      <div class="reveal reveal-delay-2 glass-strong glossy rounded-3xl p-7"><div class="flex items-center justify-between mb-4 relative z-10"><div><p class="font-semibold text-gray-800 text-sm">Drop-off Decrease</p><p class="text-xs text-gray-400">Booking abandonment rate</p></div><span class="text-2xl font-extrabold text-violet-600">35%</span></div><div class="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden relative z-10" style="box-shadow:inset 0 1px 2px rgba(0,0,0,0.04)"><div class="impact-bar" data-width="35" style="width:0%;background:linear-gradient(90deg,#8b5cf6,#a78bfa,#c4b5fd);box-shadow:0 2px 8px rgba(139,92,246,0.3),inset 0 1px 0 rgba(255,255,255,0.4)"></div></div></div>
+      <div class="reveal reveal-delay-3 glass-strong glossy rounded-3xl p-7"><div class="flex items-center justify-between mb-4 relative z-10"><div><p class="font-semibold text-gray-800 text-sm">Doctor Efficiency</p><p class="text-xs text-gray-400">Clinical time optimization</p></div><span class="text-2xl font-extrabold text-amber-600">28%</span></div><div class="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden relative z-10" style="box-shadow:inset 0 1px 2px rgba(0,0,0,0.04)"><div class="impact-bar" data-width="28" style="width:0%;background:linear-gradient(90deg,#f59e0b,#fbbf24,#fcd34d);box-shadow:0 2px 8px rgba(245,158,11,0.3),inset 0 1px 0 rgba(255,255,255,0.4)"></div></div></div>
+    </div>
+    <div class="reveal mb-16">
+      <div class="gradient-border p-8 md:p-12 rounded-[24px]">
+        <div class="grid lg:grid-cols-2 gap-8 md:gap-12 items-center">
+          <div>
+            <div class="pill bg-brand-50 text-brand-700 border border-brand-100 mb-5 w-fit"><i data-lucide="users" class="w-3.5 h-3.5"></i>Collaboration</div>
+            <h3 class="font-serif text-2xl md:text-3xl font-bold mb-7">Cross-Functional Collaboration</h3>
+            <div class="space-y-7">
+              <div class="collab-step"><div class="collab-dot"></div><h4 class="font-semibold text-gray-800 mb-1">Clinical Stakeholder Workshops</h4><p class="text-sm text-gray-500 leading-relaxed">Bi-weekly co-creation sessions with doctors, nurses, and receptionists to validate design decisions against real workflows.</p></div>
+              <div class="collab-step"><div class="collab-dot"></div><h4 class="font-semibold text-gray-800 mb-1">Engineering Partnership</h4><p class="text-sm text-gray-500 leading-relaxed">Embedded UX engineers in sprint cycles to ensure design intent survived technical constraints without compromise.</p></div>
+              <div class="collab-step"><div class="collab-dot"></div><h4 class="font-semibold text-gray-800 mb-1">Patient Advisory Board</h4><p class="text-sm text-gray-500 leading-relaxed">Recruited 8 patients as ongoing advisors, testing every major iteration before clinical deployment.</p></div>
+            </div>
+          </div>
+          <div class="relative">
+            <div class="rounded-3xl overflow-hidden" style="box-shadow:0 24px 72px rgba(0,0,0,0.12),inset 0 1px 0 rgba(255,255,255,0.2)"><img src="https://picsum.photos/seed/medical-team-glossy/600/400.jpg" alt="Cross-functional team collaboration" class="w-full h-auto object-cover"></div>
+            <div class="absolute -bottom-5 -left-5 glass-strong glossy rounded-2xl px-5 py-3.5 flex items-center gap-3" style="box-shadow:0 12px 32px rgba(0,0,0,0.08)"><div class="w-10 h-10 rounded-xl icon-badge bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center"><i data-lucide="heart-handshake" class="w-5 h-5 text-white"></i></div><div class="relative z-10"><p class="text-xs font-bold text-gray-800">12+ Teams</p><p class="text-[10px] text-gray-400">Aligned on vision</p></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="reveal">
+      <h3 class="font-serif text-2xl md:text-3xl font-bold mb-6 text-center">Navigating Complexity</h3>
+      <p class="text-gray-500 text-center mb-9 max-w-2xl mx-auto">Every healthcare project sits at the intersection of regulation, emotion, and technology. Here's how we navigated the hardest challenges.</p>
+      <div class="glass-strong glossy rounded-3xl overflow-hidden mb-14">
+        <table class="insight-table w-full"><thead><tr><th class="w-2/5">Challenge</th><th class="w-3/5">Solution</th></tr></thead>
+        <tbody>
+          <tr><td class="font-semibold text-gray-800">Regulatory compliance vs. UX simplicity</td><td>Progressive disclosure — mandatory info presented at the right moment in the flow, not all upfront</td></tr>
+          <tr><td class="font-semibold text-gray-800">Diverse user literacy levels</td><td>Universal design with icon-first navigation, plain language, and adaptive font sizing</td></tr>
+          <tr><td class="font-semibold text-gray-800">Legacy system integration</td><td>API abstraction layer allowing new UX to sit atop existing infrastructure without migration</td></tr>
+          <tr><td class="font-semibold text-gray-800">Doctor adoption resistance</td><td>Co-design process giving clinicians ownership; measured efficiency gains as proof points</td></tr>
+        </tbody></table>
+      </div>
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="reveal reveal-delay-1 glass-strong glossy rounded-3xl p-7 text-center"><div class="w-16 h-16 mx-auto mb-5 rounded-2xl icon-badge bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center relative z-10"><i data-lucide="scale" class="w-7 h-7 text-white"></i></div><h4 class="font-serif text-lg font-bold mb-2 relative z-10">Clarity vs. Trust</h4><p class="text-sm text-gray-500 leading-relaxed relative z-10">In healthcare, transparency builds trust faster than aesthetics. We chose to show, not decorate.</p></div>
+        <div class="reveal reveal-delay-2 glass-strong glossy rounded-3xl p-7 text-center"><div class="w-16 h-16 mx-auto mb-5 rounded-2xl icon-badge bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center relative z-10"><i data-lucide="minimize-2" class="w-7 h-7 text-white"></i></div><h4 class="font-serif text-lg font-bold mb-2 relative z-10">Simplicity is Strategic</h4><p class="text-sm text-gray-500 leading-relaxed relative z-10">Every removed step was a recovered patient. Simplification wasn't a style choice — it was a business strategy.</p></div>
+        <div class="reveal reveal-delay-3 glass-strong glossy rounded-3xl p-7 text-center"><div class="w-16 h-16 mx-auto mb-5 rounded-2xl icon-badge bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center relative z-10"><i data-lucide="shield-check" class="w-7 h-7 text-white"></i></div><h4 class="font-serif text-lg font-bold mb-2 relative z-10">Safety in Design</h4><p class="text-sm text-gray-500 leading-relaxed relative z-10">Healthcare interfaces must prevent harm. Error states, confirmations, and fallbacks are first-class citizens.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- REFLECTION -->
+<section id="reflection" class="py-24 md:py-32 relative">
+  <div class="max-w-5xl mx-auto px-6">
+    <div class="reveal text-center mb-16">
+      <div class="pill bg-brand-50 text-brand-700 border border-brand-100 mb-5 mx-auto"><i data-lucide="pen-tool" class="w-3.5 h-3.5"></i>Reflection</div>
+      <h2 class="font-serif text-3xl md:text-5xl font-bold tracking-tight mb-4">Redefining Patient Outcomes Through UX</h2>
+    </div>
+    <div class="reveal mb-16">
+      <div class="glass-dark rounded-3xl p-8 md:p-14 text-white relative overflow-hidden">
+        <div class="absolute inset-0" style="background:radial-gradient(ellipse at 15% 85%,rgba(13,148,136,0.18),transparent 55%)"></div>
+        <div class="absolute top-0 left-0 right-0 h-px" style="background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent)"></div>
+        <div class="relative">
+          <div class="quote-mark mb-2">"</div>
+          <blockquote class="font-serif text-xl md:text-3xl leading-relaxed -mt-24 mb-7">This project fundamentally shifted how I think about design — not as making things beautiful, but as <span class="text-brand-300">removing barriers between people and the care they need</span>. In healthcare, good design isn't a luxury. It's a determinant of outcomes.</blockquote>
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center" style="box-shadow:0 4px 16px rgba(13,148,136,0.3),inset 0 1px 0 rgba(255,255,255,0.2)"><i data-lucide="pen-tool" class="w-5 h-5 text-white"></i></div>
+            <div><p class="font-semibold text-white">Senior UX Designer</p><p class="text-sm text-gray-400">SATA Health UX Team</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="reveal grid md:grid-cols-2 gap-5">
+      <div class="glass-strong glossy rounded-3xl p-7"><div class="flex items-center gap-3 mb-4 relative z-10"><div class="w-10 h-10 rounded-2xl icon-badge bg-gradient-to-br from-brand-400 to-brand-500 flex items-center justify-center"><i data-lucide="brain" class="w-5 h-5 text-white"></i></div><h4 class="font-semibold text-gray-800">Empathy at Scale</h4></div><p class="text-sm text-gray-500 leading-relaxed relative z-10">Learned to translate individual patient stories into systemic design decisions that benefit thousands. Research isn't just gathering data — it's finding the pattern in human experience.</p></div>
+      <div class="glass-strong glossy rounded-3xl p-7"><div class="flex items-center gap-3 mb-4 relative z-10"><div class="w-10 h-10 rounded-2xl icon-badge bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center"><i data-lucide="git-merge" class="w-5 h-5 text-white"></i></div><h4 class="font-semibold text-gray-800">Systems Thinking</h4></div><p class="text-sm text-gray-500 leading-relaxed relative z-10">Healthcare doesn't have users — it has an ecosystem. Designing for one persona without understanding their impact on others creates new problems. Every change rippled across the system.</p></div>
+      <div class="glass-strong glossy rounded-3xl p-7"><div class="flex items-center gap-3 mb-4 relative z-10"><div class="w-10 h-10 rounded-2xl icon-badge bg-gradient-to-br from-violet-400 to-violet-500 flex items-center justify-center"><i data-lucide="test-tubes" class="w-5 h-5 text-white"></i></div><h4 class="font-semibold text-gray-800">Measurement Discipline</h4></div><p class="text-sm text-gray-500 leading-relaxed relative z-10">Proving UX impact in healthcare requires rigorous measurement. We established baseline metrics before design and tracked every KPI post-launch, giving stakeholders confidence in design investment.</p></div>
+      <div class="glass-strong glossy rounded-3xl p-7"><div class="flex items-center gap-3 mb-4 relative z-10"><div class="w-10 h-10 rounded-2xl icon-badge bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center"><i data-lucide="heart" class="w-5 h-5 text-white"></i></div><h4 class="font-semibold text-gray-800">Design That Heals</h4></div><p class="text-sm text-gray-500 leading-relaxed relative z-10">When a patient can book in 30 seconds instead of 10 minutes, when a doctor sees trends instead of raw numbers, when anxiety is replaced by clarity — that's design doing what medicine aspires to do.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer class="py-16 relative" style="border-top:1px solid rgba(0,0,0,0.04)">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-2xl icon-badge bg-gradient-to-br from-brand-400 via-brand-500 to-brand-700 flex items-center justify-center"><i data-lucide="heart-pulse" class="w-5 h-5 text-white"></i></div><span class="font-bold text-lg tracking-tight">SATA Health</span></div>
+      <p class="font-serif text-2xl md:text-3xl font-bold shimmer-text">Design that Heals.</p>
+      <p class="text-sm text-gray-400">© 2024 Case Study · UX Design</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+lucide.createIcons();
+
+const navbar=document.getElementById('navbar');
+window.addEventListener('scroll',()=>{navbar.classList.toggle('nav-scrolled',window.scrollY>80)});
+
+const mobileMenuBtn=document.getElementById('mobileMenuBtn'),mobileMenu=document.getElementById('mobileMenu');
+mobileMenuBtn.addEventListener('click',()=>mobileMenu.classList.toggle('hidden'));
+document.querySelectorAll('.mobile-link').forEach(l=>l.addEventListener('click',()=>mobileMenu.classList.add('hidden')));
+
+const ro=new IntersectionObserver(e=>e.forEach(en=>{if(en.isIntersecting)en.target.classList.add('active')}),{threshold:0.08,rootMargin:'0px 0px -50px 0px'});
+document.querySelectorAll('.reveal').forEach(el=>ro.observe(el));
+
+// Animate the tagline underline when hero reveals
+const taglineObserver=new IntersectionObserver(e=>{
+  e.forEach(en=>{if(en.isIntersecting){
+    const line=en.querySelector('.hero-tagline-line');
+    if(line)line.classList.add('active');
+  }});
+},{threshold:0.3});
+const taglineWrap=document.querySelector('.hero-tagline-wrap');
+if(taglineWrap)taglineObserver.observe(taglineWrap);
+
+const co=new IntersectionObserver(e=>e.forEach(en=>{
+  if(en.isIntersecting){const el=en.target;if(el.dataset.c)return;el.dataset.c='1';
+  const t=parseFloat(el.dataset.target),s=el.dataset.suffix||'',d=el.dataset.decimal==='true',dur=2000,st=performance.now();
+  (function up(n){const p=Math.min((n-st)/dur,1),e=1-Math.pow(1-p,3);
+  el.textContent=(d?(t*e).toFixed(1):Math.round(t*e))+s;if(p<1)requestAnimationFrame(up)})(st)}}),{threshold:0.5});
+document.querySelectorAll('.counter').forEach(el=>co.observe(el));
+
+const bo=new IntersectionObserver(e=>e.forEach(en=>{
+  if(en.isIntersecting){const el=en.target;if(el.dataset.a)return;el.dataset.a='1';
+  setTimeout(()=>{el.style.width=el.dataset.width+'%'},300)}}),{threshold:0.3});
+document.querySelectorAll('.impact-bar').forEach(el=>bo.observe(el));
+
+document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',function(e){e.preventDefault();const t=document.querySelector(this.getAttribute('href'));if(t)t.scrollIntoView({behavior:'smooth',block:'start'})}));
+</script>
+</body>
+</html>
